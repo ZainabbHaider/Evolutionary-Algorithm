@@ -56,12 +56,15 @@ def crossover(parent1, parent2):
     return child1, child2
 
 # Perform mutation
-# def mutate(solution):
-#     mutated_solution = solution[:]
-#     for i in range(len(solution)):
-#         if random.random() < MUTATION_RATE:
-#             mutated_solution[i] = 1 - solution[i]  # Flip the bit
-#     return mutated_solution
+def mutate(solution):
+    mutated_solution = solution[:]
+    random_index_1 = random.randint(0, len(mutated_solution)-1)
+    random_index_2 = random.randint(0, len(mutated_solution)-1)
+    while random_index_1 == random_index_2:
+        random_index_2 = random.randint(0, len(mutated_solution)-1)
+    removed_item = mutated_solution.pop(random_index_1)
+    mutated_solution.insert(random_index_2, removed_item)
+    return mutated_solution
 
 def random_selection(size):
     random_number = random.randint(0, size-1)
@@ -81,6 +84,16 @@ def fitness_proportional_selection(population, fitness_values):
     total_fitness = sum(fitness_values)
     probabilities = [fitness / total_fitness for fitness in fitness_values]
     selected_index = random.choices(population, weights=probabilities)
+    return population.index(selected_index[0])
+
+def rank_based_selection(population, fitness_scores):
+    indexed_list = list(enumerate(fitness_scores, start=1))
+    sorted_list = sorted(indexed_list, key=lambda x: x[1])
+    weight_mapping = {index: weight for weight, (index, _) in enumerate(sorted_list, start=1)}
+    ranks = [weight_mapping[index] for index, _ in indexed_list]
+    total_rank_sum = sum(ranks)
+    probabilities = [rank / total_rank_sum for rank in ranks]
+    selected_index = random.choices(population, weights = probabilities)
     return population.index(selected_index[0])
 
 # Evolutionary algorithm
