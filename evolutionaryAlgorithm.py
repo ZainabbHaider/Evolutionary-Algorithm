@@ -96,11 +96,15 @@ def rank_based_selection(population, fitness_scores):
     selected_index = random.choices(population, weights = probabilities)
     return population.index(selected_index[0])
 
-def binary_tournament_selection(population, fitness_scores):
+def binary_tournament_selection(fitness_scores):
     r1 = random_selection(len(fitness_scores))
     r2 = random_selection(len(fitness_scores))
     while r1 == r2:
         r2 = random_selection(len(fitness_scores))
+    if fitness_scores[r1] > fitness_scores[r2]:
+        return r1
+    else
+        return r2
 
 # Evolutionary algorithm
 def evolutionary_algorithm():
