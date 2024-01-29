@@ -32,27 +32,45 @@ def initialize_population():
     
     return popuation
 
-# Perform crossover
 def crossover(parent1, parent2):
-    point = random.randint(0, len(parent1) - 1)
-    child1 = parent1[point:]  # Copy the part after the cut point from parent1 to child1
-    remaining_numbers = [num for num in parent2 if num not in child1]  # Numbers not in child1
-
-    # Copy remaining numbers using the order of parent2
-    for num in parent2:
-        if len(child1) == len(parent1):  # If child1 is complete, break
-            break
-        if num not in child1:  # If the number is not in child1, add it
-            child1.append(num)
-
-    # Create child2 by swapping parent1 and parent2
-    child2 = [num for num in parent1 if num not in child1]  # Numbers not in child1
-    for num in parent2:
-        if len(child2) == len(parent1):  # If child2 is complete, break
-            break
-        if num not in child2:  # If the number is not in child2, add it
-            child2.append(num)
-
+    # Child 1
+    # Choose two distinct points for crossover
+    point1, point2 = sorted(random.sample(range(1, len(parent1)), 2))
+    # print(point1,point2)
+    child1 = []
+    # Create child1 by combining parts from both parents
+    child1_middle = parent2[point1:point2]  # Middle part from parent2
+    remaining_num = []
+    for i in range(point2, len(parent1)):
+        if parent1[i] not in child1_middle:
+            remaining_num.append(parent1[i])
+    for i in range(point2):
+        if parent1[i] not in child1_middle:
+            remaining_num.append(parent1[i])
+    for i in range(point2, len(parent1)):
+        child1_middle.append(remaining_num.pop(0))
+    
+    for i in range(point1):
+        child1.append(remaining_num.pop(0))
+    child1 = child1 + child1_middle 
+    
+    # Child 2
+    child2 = []
+    child2_middle = parent1[point1:point2]  # Middle part from parent2
+    remaining_num2 = []
+    for i in range(point2, len(parent2)):
+        if parent2[i] not in child2_middle:
+            remaining_num2.append(parent2[i])
+    for i in range(point2):
+        if parent2[i] not in child2_middle:
+            remaining_num2.append(parent2[i])
+    for i in range(point2, len(parent2)):
+        child2_middle.append(remaining_num2.pop(0))
+    for i in range(point1):
+        child2.append(remaining_num2.pop(0))
+    child2 = child2 + child2_middle    
+    # print(child2)  
+    
     return child1, child2
 
 # Perform mutation
@@ -103,7 +121,7 @@ def binary_tournament_selection(fitness_scores):
         r2 = random_selection(len(fitness_scores))
     if fitness_scores[r1] > fitness_scores[r2]:
         return r1
-    else
+    else:
         return r2
 
 # Evolutionary algorithm
@@ -117,11 +135,18 @@ def evolutionary_algorithm():
         # Create offspring through crossover and mutation
         offspring = []
         for i in range(OFFSPRINGS//2):
-            parent1 = population[fitness_proportional_selection(population, fitness_scores)]
-            parent2 = population[fitness_proportional_selection(population, fitness_scores)]
-            child1, child2 = crossover(parent1, parent2)
-            offspring.append(child1)
-            offspring.append(child2)
+            parent1 = population[fitness_proportional_selection(population,fitness_scores)]
+            parent2 = population[fitness_proportional_selection(population,fitness_scores)]
+            random_number = random.random()
+            if random_number>MUTATION_RATE:
+                child1, child2 = crossover(parent1, parent2)
+                offspring.append(child1)
+                offspring.append(child2)
+            else:
+                child1 = mutate(parent1)
+                child2 = mutate(parent2)
+                offspring.append(child1)
+                offspring.append(child2)
             
         for i in offspring:
             population.append(i)
@@ -132,11 +157,11 @@ def evolutionary_algorithm():
             # print(i)
             population.pop(i)
             fitness_scores.pop(i)
-        # print(len(population))
-
-    # Output the best solution found
-    best_solution = max(population, key=fitness_function)
-    return best_solution, fitness_function(best_solution)
+        best_solution = min(fitness_scores)
+        print("Generateion", generation, ":",best_solution)
+            
+    best_solution = min(fitness_scores)
+    return population[fitness_scores.index(best_solution)], best_solution
 
 def read_tsp_data(filename):
     tsp_data = {}
@@ -163,10 +188,12 @@ tsp_data = read_tsp_data(filename)
 # print(pop)
 
 best_solution, best_fitness = evolutionary_algorithm()
-print(best_solution)
+# print(best_solution)
 print(best_fitness)
 # print(fitness_function(pop[0]))
 
 
-
+# p1 = [1,2,3,4,5,6,7,8,9]
+# p2 = [9,3,7,8,2,6,5,1,4]
+# crossover(p1,p2)
 
