@@ -2,14 +2,13 @@ import random
 import math
 
 # Define parameters
-POPULATION_SIZE = 30
+POPULATION_SIZE = 40
 GENERATIONS = 50
-MUTATION_RATE = 0.5
-OFFSPRINGS = 10
+MUTATION_RATE = 0.2
+OFFSPRINGS = 30
 
-# Define fitness function (example)
+# Define fitness function 
 def fitness_function(solution):
-    # Example: Fitness is the sum of the solution's elements
     fitness = 0
     for i in range(len(solution)-1):
         x1, y1 = tsp_data[solution[i]]
@@ -34,11 +33,8 @@ def initialize_population():
 
 def crossover(parent1, parent2):
     # Child 1
-    # Choose two distinct points for crossover
     point1, point2 = sorted(random.sample(range(1, len(parent1)), 2))
-    # print(point1,point2)
     child1 = []
-    # Create child1 by combining parts from both parents
     child1_middle = parent2[point1:point2]  # Middle part from parent2
     remaining_num = []
     for i in range(point2, len(parent1)):
@@ -56,7 +52,7 @@ def crossover(parent1, parent2):
     
     # Child 2
     child2 = []
-    child2_middle = parent1[point1:point2]  # Middle part from parent2
+    child2_middle = parent1[point1:point2]  # Middle part from parent1
     remaining_num2 = []
     for i in range(point2, len(parent2)):
         if parent2[i] not in child2_middle:
@@ -69,7 +65,6 @@ def crossover(parent1, parent2):
     for i in range(point1):
         child2.append(remaining_num2.pop(0))
     child2 = child2 + child2_middle    
-    # print(child2)  
     
     return child1, child2
 
@@ -80,8 +75,14 @@ def mutate(solution):
     random_index_2 = random.randint(0, len(mutated_solution)-1)
     while random_index_1 == random_index_2:
         random_index_2 = random.randint(0, len(mutated_solution)-1)
-    removed_item = mutated_solution.pop(random_index_1)
-    mutated_solution.insert(random_index_2, removed_item)
+        
+    if random_index_1 > random_index_2:
+        removed_item = mutated_solution.pop(random_index_1)
+        mutated_solution.insert((random_index_2+1), removed_item)
+    else:
+        removed_item = mutated_solution.pop(random_index_2)
+        mutated_solution.insert((random_index_1+1), removed_item)
+        
     return mutated_solution
 
 def random_selection(size):
@@ -94,25 +95,25 @@ def truncation_selection_max(fitness_scores):
     return max_index
 
 def truncation_selection_min(fitness_scores):
-    max_value = min(fitness_scores)
-    max_index = fitness_scores.index(max_value)
-    return max_index
+    min_index = min(fitness_scores)
+    min_index = fitness_scores.index(min_index)
+    return min_index
 
 def fitness_proportional_selection(population, fitness_values):
     total_fitness = sum(fitness_values)
     probabilities = [fitness / total_fitness for fitness in fitness_values]
-    selected_index = random.choices(population, weights=probabilities)
-    return population.index(selected_index[0])
+    selected_index = random.choices(range(len(population)), weights=probabilities)
+    return selected_index[0]
 
 def rank_based_selection(population, fitness_scores):
-    indexed_list = list(enumerate(fitness_scores, start=1))
-    sorted_list = sorted(indexed_list, key=lambda x: x[1])
-    weight_mapping = {index: weight for weight, (index, _) in enumerate(sorted_list, start=1)}
-    ranks = [weight_mapping[index] for index, _ in indexed_list]
+    sorted_list = sorted(fitness_scores, reverse=True)
+    indexed_list = list(enumerate(sorted_list, start=1))
+    weight_mapping = {rank: fitness for rank, fitness in indexed_list}
+    ranks = [index for index, _ in indexed_list]
     total_rank_sum = sum(ranks)
     probabilities = [rank / total_rank_sum for rank in ranks]
-    selected_index = random.choices(population, weights = probabilities)
-    return population.index(selected_index[0])
+    selected_index = random.choices(ranks, weights = probabilities)
+    return fitness_scores.index(weight_mapping[selected_index[0]])
 
 def binary_tournament_selection(fitness_scores):
     r1 = random_selection(len(fitness_scores))
@@ -158,10 +159,12 @@ def evolutionary_algorithm():
             population.pop(i)
             fitness_scores.pop(i)
         best_solution = min(fitness_scores)
-        print("Generateion", generation, ":",best_solution)
+        average_fitness = average(fitness_scores)
+        print("Generation", generation, ": Best:",best_solution, "Average:", average_fitness)
             
     best_solution = min(fitness_scores)
-    return population[fitness_scores.index(best_solution)], best_solution
+    average_fitness = average(fitness_scores)
+    return population[fitness_scores.index(best_solution)], best_solution, average_fitness
 
 def read_tsp_data(filename):
     tsp_data = {}
@@ -180,6 +183,11 @@ def read_tsp_data(filename):
 
     return tsp_data
 
+def average(lst):
+    if not lst:
+        return 0  # Handle the case when the list is empty
+    return sum(lst) / len(lst)
+
 # Usage
 filename = "qa194.tsp"
 tsp_data = read_tsp_data(filename)
@@ -187,13 +195,14 @@ tsp_data = read_tsp_data(filename)
 # pop = initialize_population()
 # print(pop)
 
-best_solution, best_fitness = evolutionary_algorithm()
+best_solution, best_fitness, avgFitness = evolutionary_algorithm()
 # print(best_solution)
-print(best_fitness)
+print("Best fitness:", best_fitness, "Average fitness:", avgFitness)
 # print(fitness_function(pop[0]))
 
 
-# p1 = [1,2,3,4,5,6,7,8,9]
-# p2 = [9,3,7,8,2,6,5,1,4]
+# p1 = [1.4, 5.6, 2.3, 7.2, 9.3 ,3.5, 6.5, 4.6, 0.7, 1.9]
+# p2 = [9,3,7,8,2,6,5,1,4,0]
+# print(rank_based_selection(p2,p1))
 # crossover(p1,p2)
 
