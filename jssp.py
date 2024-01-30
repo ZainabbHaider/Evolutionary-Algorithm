@@ -1,9 +1,10 @@
 import random
 import math
+import numpy as np
 
 # Define parameters
 POPULATION_SIZE = 40
-GENERATIONS = 100000
+GENERATIONS = 50
 MUTATION_RATE = 0.2
 OFFSPRINGS = 30
 
@@ -19,17 +20,16 @@ def fitness_function(solution):
     return fitness
 
 # Initialize population
-def initialize_population():
-    popuation = []
-    for i in range(POPULATION_SIZE):
-        all_values = list(tsp_data.keys())
-        # print(all_values)
-        # Randomly sample 'size' number of unique values from the list
-        random.shuffle(all_values)
-        # print(all_values)
-        popuation.append(all_values)
+def initialize_population(num_machines, num_jobs):
+    m,n=num_machines, num_jobs
     
-    return popuation
+    matrix = np.zeros((m, n), dtype=int)
+    
+    # Generate unique permutations for rows
+    for i in range(m):
+        row_permutation = np.random.permutation(np.arange(1, n+1))
+        matrix[i] = row_permutation
+    return matrix
 
 def crossover(parent1, parent2):
     # Child 1
@@ -167,21 +167,30 @@ def evolutionary_algorithm():
     return population[fitness_scores.index(best_solution)], best_solution, average_fitness
 
 def read_tsp_data(filename):
-    tsp_data = {}
-    with open(filename, 'r') as file:
-        lines = file.readlines()
+    # Read data from a text file
+    file_path = 'data.txt'  # Replace with the actual file path
+    with open(file_path, 'r') as file:
+        data = file.read()
 
-        # Find the index where NODE_COORD_SECTION starts
-        coord_section_index = lines.index('NODE_COORD_SECTION\n')
+    # Split the data into lines
+    lines = data.split('\n')
 
-        # Iterate over lines after NODE_COORD_SECTION and extract coordinates
-        for line in lines[coord_section_index + 1:]:
-            if line.strip() == 'EOF':
-                break
-            node, x, y = line.strip().split(' ')
-            tsp_data[int(node)] = (float(x), float(y))
+    # Get the number of jobs and machines
+    num_jobs, num_machines = map(int, lines[0].split())
 
-    return tsp_data
+    # Extract job processing times
+    job_data = lines[1:]
+
+    # Initialize an empty list to store job schedules
+    job_schedules = []
+
+    # Parse each job data and create a dictionary for each job
+    for i in range(num_jobs):
+        job_schedule = {}
+        for j in range(num_machines):
+            machine, time = map(int, job_data[i].split()[2*j:2*j+2])
+            job_schedule[machine] = time
+        job_schedules.append(job_schedule)
 
 def average(lst):
     if not lst:
@@ -189,7 +198,7 @@ def average(lst):
     return sum(lst) / len(lst)
 
 # Usage
-filename = "qa194.tsp"
+filename = "data.txt"
 tsp_data = read_tsp_data(filename)
 # print(tsp_data)
 # pop = initialize_population()
