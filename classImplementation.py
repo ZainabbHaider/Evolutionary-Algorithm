@@ -78,8 +78,8 @@ class Population:
         m = Individual(mutated_solution)
         return m
 
-    def random_selection(self, size):
-        random_number = random.randint(0, size-1)
+    def random_selection(self, fitness_scores):
+        random_number = random.randint(0, len(fitness_scores)-1)
         return random_number
 
     def truncation_selection_max(self, fitness_scores):
@@ -135,8 +135,6 @@ class EvolutionaryAlgorithm:
         return Population(individuals)
 
     def run(self, tsp_data, pop):
-        
-
         for generation in range(self.generations):
             fitness_scores = pop.fitness_scores(tsp_data)
 
@@ -145,32 +143,43 @@ class EvolutionaryAlgorithm:
             for i in range(self.offsprings // 2):
                 parent1 = pop.individuals[pop.rank_based_selection(fitness_scores)]
                 parent2 = pop.individuals[pop.rank_based_selection(fitness_scores)]
-                random_number = random.random()
-                if random_number>self.mutation_rate:
-                    child1, child2 = pop.crossover(parent1, parent2)
+                child1, child2 = pop.crossover(parent1, parent2)
+                random_number_1 = random.random()
+                random_number_2 = random.random()
+                if random_number_1 > self.mutation_rate:
                     offspring.append(child1)
+                else:
+                    child1 = pop.mutate(child1)
+                    offspring.append(child1)
+                if random_number_2 > self.mutation_rate:
                     offspring.append(child2)
                 else:
-                    child1 = pop.mutate(parent1)
-                    child2 = pop.mutate(parent2)
-                    offspring.append(child1)
+                    child2 = pop.mutate(child2)
                     offspring.append(child2)
                     
             for i in offspring:
                 pop.individuals.append(i)
-            
-            fitness_scores = pop.fitness_scores(tsp_data)
 
-            for i in range(self.offsprings):
-                i = pop.truncation_selection_max(fitness_scores)
-                pop.individuals.pop(i)
-                fitness_scores.pop(i)
+            fitness_scores = pop.fitness_scores(tsp_data)
+            
+            temp_population = []
+            for i in range(self.population_size):
+                x = pop.truncation_selection_min(fitness_scores)
+                y = pop.individuals[x]
+                pop.individuals.pop(x)
+                fitness_scores.pop(x)
+                temp_population.append(y)
+            pop.individuals = temp_population
+                
             best_solution = min(fitness_scores)
             average_fitness = sum(fitness_scores) / len(fitness_scores)
             print("Generation", generation, ": Best:",best_solution, "Average:", average_fitness)
                 
         best_solution = min(fitness_scores)
         average_fitness = sum(fitness_scores) / len(fitness_scores)
+        # print("Length of fitness_scores:", len(fitness_scores))
+        # print("Length of individuals:", len(pop.individuals))
+        # print("Best solution index:", fitness_scores.index(best_solution))
         return pop, pop.individuals[fitness_scores.index(best_solution)], best_solution, average_fitness
 
 
@@ -192,10 +201,10 @@ def read_tsp_data(filename):
     return tsp_data
 
 # Example usage
-filename = "qa194.tsp"
+filename = "qa194.tsp"  
 tsp_data = read_tsp_data(filename)
 
-ea = EvolutionaryAlgorithm(population_size=40, generations=1000, mutation_rate=0.2, offsprings=30)
+ea = EvolutionaryAlgorithm(population_size=50, generations=5000, mutation_rate=0.15, offsprings=25)
 population = ea.initialize_population(tsp_data)
 # Initialize and run evolutionary algorithm
 for iteration in range(10):
