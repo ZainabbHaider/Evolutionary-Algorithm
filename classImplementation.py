@@ -92,9 +92,9 @@ class Population:
         min_index = fitness_scores.index(min_index)
         return min_index
 
-    def fitness_proportional_selection(self, fitness_values):
-        total_fitness = sum(fitness_values)
-        probabilities = [fitness / total_fitness for fitness in fitness_values]
+    def fitness_proportional_selection(self, fitness_scores):
+        total_fitness = sum(fitness_scores)
+        probabilities = [fitness / total_fitness for fitness in fitness_scores]
         selected_index = random.choices(range(len(self.individuals)), weights=probabilities)
         return selected_index[0]
 
@@ -177,9 +177,6 @@ class EvolutionaryAlgorithm:
                 
         best_solution = min(fitness_scores)
         average_fitness = sum(fitness_scores) / len(fitness_scores)
-        # print("Length of fitness_scores:", len(fitness_scores))
-        # print("Length of individuals:", len(pop.individuals))
-        # print("Best solution index:", fitness_scores.index(best_solution))
         return pop, pop.individuals[fitness_scores.index(best_solution)], best_solution, average_fitness
 
 
@@ -201,13 +198,13 @@ def read_tsp_data(filename):
     return tsp_data
 
 # Example usage
-filename = "qa194.tsp"  
+filename = "qa194.tsp"
 tsp_data = read_tsp_data(filename)
 
-ea = EvolutionaryAlgorithm(population_size=50, generations=5000, mutation_rate=0.15, offsprings=25)
+ea = EvolutionaryAlgorithm(population_size=500, generations=1000, mutation_rate=0.25, offsprings = 600)
 population = ea.initialize_population(tsp_data)
 # Initialize and run evolutionary algorithm
 for iteration in range(10):
     population, best_individual, best_fit, avg_fit = ea.run(tsp_data,population)
     # best_fitness = best_individual.fitness(tsp_data)
-    print(f"Iteration: {iteration} Best Fitness: {best_fit}")
+    print(f"Iteration: {iteration + 1} Best Fitness: {best_fit}")
