@@ -1,89 +1,90 @@
 import random
 import math
+import copy
+import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.colors as mcolors
 
 # Define parameters
-POPULATION_SIZE = 40
-GENERATIONS = 50
-MUTATION_RATE = 0.2
-OFFSPRINGS = 30
+POPULATION_SIZE = 50
+GENERATIONS = 500
+MUTATION_RATE = 0.8
+OFFSPRINGS = 40
+
+
+def convert_solution_to_schedule(sol, data, num_machines, num_jobs):
+    schedule = [] 
+    for i in range(num_machines): #num_machines
+        schedule.append([])
+    machine_free_at = [0] * num_machines #num_machines
+    job_last_processed = [0] * num_jobs #num_jobs
+    for i in sol:
+        job = data[i]
+        operation = job.pop(0)
+        if machine_free_at[operation[0]] >= job_last_processed[i]:
+            schedule[operation[0]].append((i, machine_free_at[operation[0]], operation[1]))
+            machine_free_at[operation[0]] += operation[1]
+            job_last_processed[i] = machine_free_at[operation[0]]
+        else:
+            schedule[operation[0]].append((i, job_last_processed[i], operation[1]))
+            job_last_processed[i] += operation[1]
+            machine_free_at[operation[0]] = job_last_processed[i]            
+    return schedule
 
 # Define fitness function 
-def fitness_function(solution):
-    fitness = 0
-    for i in range(len(solution)-1):
-        x1, y1 = tsp_data[solution[i]]
-        x2, y2 = tsp_data[solution[i+1]]
-        distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-        fitness+=distance
-    
-    return fitness
+def fitness_function(solution, jssp_data, num_machines, num_jobs):
+    sch = convert_solution_to_schedule(solution, copy.deepcopy(jssp_data), num_machines, num_jobs)
+    cmax = []
+    for i in sch:
+        cmax.append(i[num_jobs-1][1]+jssp_data[i[num_jobs-1][0]][num_machines-1][1])    
+    return max(cmax)
 
 # Initialize population
 def initialize_population(num_machines, num_jobs):
-    m,n=num_machines, num_jobs
+    popuation = []
+    for i in range(POPULATION_SIZE):
+        random_solution = []
+        for i in range(num_machines): #num_machines
+            random_solution += random.sample(range(num_jobs), num_jobs)
+        popuation.append(random_solution)
     
-    matrix = np.zeros((m, n), dtype=int)
-    
-    # Generate unique permutations for rows
-    for i in range(m):
-        row_permutation = np.random.permutation(np.arange(1, n+1))
-        matrix[i] = row_permutation
-    return matrix
+    # print(popuation)
+    return popuation
 
-def crossover(parent1, parent2):
+def crossover(parent1, parent2, num_jobs, num_machines):
     # Child 1
-    point1, point2 = sorted(random.sample(range(1, len(parent1)), 2))
-    child1 = []
-    child1_middle = parent2[point1:point2]  # Middle part from parent2
-    remaining_num = []
-    for i in range(point2, len(parent1)):
-        if parent1[i] not in child1_middle:
-            remaining_num.append(parent1[i])
-    for i in range(point2):
-        if parent1[i] not in child1_middle:
-            remaining_num.append(parent1[i])
-    for i in range(point2, len(parent1)):
-        child1_middle.append(remaining_num.pop(0))
+    point1, point2 = sorted(random.sample(range(1, num_machines), 2))
     
-    for i in range(point1):
-        child1.append(remaining_num.pop(0))
-    child1 = child1 + child1_middle 
-    
-    # Child 2
-    child2 = []
-    child2_middle = parent1[point1:point2]  # Middle part from parent1
-    remaining_num2 = []
-    for i in range(point2, len(parent2)):
-        if parent2[i] not in child2_middle:
-            remaining_num2.append(parent2[i])
-    for i in range(point2):
-        if parent2[i] not in child2_middle:
-            remaining_num2.append(parent2[i])
-    for i in range(point2, len(parent2)):
-        child2_middle.append(remaining_num2.pop(0))
-    for i in range(point1):
-        child2.append(remaining_num2.pop(0))
-    child2 = child2 + child2_middle    
-    
-    return child1, child2
+    offspring1 = parent2[:point1*num_jobs] + parent1[point1*num_jobs:point2*num_jobs] + parent2[point2*num_jobs:]
+
+    # Perform crossover for child 2 (offspring2)
+    offspring2 = parent1[:point1*num_jobs] + parent2[point1*num_jobs:point2*num_jobs] + parent1[point2*num_jobs:]
+
+    return offspring1, offspring2
 
 # Perform mutation
-def mutate(solution):
+def mutate(solution, num_jobs, num_machines):
     mutated_solution = solution[:]
-    random_index_1 = random.randint(0, len(mutated_solution)-1)
-    random_index_2 = random.randint(0, len(mutated_solution)-1)
+    random_index_1 = random.randint(0, num_machines-1)
+    random_index_2 = random.randint(0, num_machines-1)
     while random_index_1 == random_index_2:
-        random_index_2 = random.randint(0, len(mutated_solution)-1)
+        random_index_2 = random.randint(0, num_machines-1)
         
     if random_index_1 > random_index_2:
-        removed_item = mutated_solution.pop(random_index_1)
-        mutated_solution.insert((random_index_2+1), removed_item)
+        deleted_elements = mutated_solution[random_index_1*num_jobs:random_index_1*num_jobs+num_jobs]
+        # print(deleted_elements)
+        del mutated_solution[random_index_1*num_jobs:random_index_1*num_jobs+num_jobs]
+        for i in range((random_index_2)*num_jobs, (random_index_2)*num_jobs+num_jobs):
+            mutated_solution.insert(i, deleted_elements.pop(0))
     else:
-        removed_item = mutated_solution.pop(random_index_2)
-        mutated_solution.insert((random_index_1+1), removed_item)
+        deleted_elements = mutated_solution[random_index_2*num_jobs:random_index_2*num_jobs+num_jobs]
+        # print(deleted_elements)
+        del mutated_solution[random_index_2*num_jobs:random_index_2*num_jobs+num_jobs]
+        for i in range((random_index_1)*num_jobs, (random_index_1)*num_jobs+num_jobs):
+            mutated_solution.insert(i, deleted_elements.pop(0))
         
     return mutated_solution
+
 
 def random_selection(size):
     random_number = random.randint(0, size-1)
@@ -126,38 +127,45 @@ def binary_tournament_selection(fitness_scores):
         return r2
 
 # Evolutionary algorithm
-def evolutionary_algorithm():
-    population = initialize_population()
+def evolutionary_algorithm(num_machines, num_jobs, jssp_data):
+    population = initialize_population(num_machines, num_jobs)
 
     for generation in range(GENERATIONS):
         # Evaluate population
-        fitness_scores = [fitness_function(solution) for solution in population]
+        fitness_scores = [fitness_function(solution, jssp_data, num_machines, num_jobs) for solution in population]
 
         # Create offspring through crossover and mutation
         offspring = []
         for i in range(OFFSPRINGS//2):
             parent1 = population[fitness_proportional_selection(population,fitness_scores)]
             parent2 = population[fitness_proportional_selection(population,fitness_scores)]
-            random_number = random.random()
-            if random_number>MUTATION_RATE:
-                child1, child2 = crossover(parent1, parent2)
+            child1, child2 = crossover(parent1, parent2, num_jobs, num_machines)
+            random_number_1 = random.random()
+            random_number_2 = random.random()
+            if random_number_1 > MUTATION_RATE:
                 offspring.append(child1)
+            else:
+                child1 = mutate(child1,num_jobs, num_machines)
+                offspring.append(child1)
+            if random_number_2 > MUTATION_RATE:
                 offspring.append(child2)
             else:
-                child1 = mutate(parent1)
-                child2 = mutate(parent2)
-                offspring.append(child1)
+                child2 = mutate(child2, num_jobs, num_machines)
                 offspring.append(child2)
             
         for i in offspring:
             population.append(i)
             
-        fitness_scores = [fitness_function(solution) for solution in population]
-        for i in range(OFFSPRINGS):
-            i = truncation_selection_max(fitness_scores)
-            # print(i)
-            population.pop(i)
-            fitness_scores.pop(i)
+        fitness_scores = [fitness_function(solution, jssp_data, num_machines, num_jobs) for solution in population]
+        temp_population = []
+        for i in range(POPULATION_SIZE):
+            x = truncation_selection_min(fitness_scores)
+            y = population[x]
+            population.pop(x)
+            fitness_scores.pop(x)
+            temp_population.append(y)
+        population = temp_population
+            
         best_solution = min(fitness_scores)
         average_fitness = average(fitness_scores)
         print("Generation", generation, ": Best:",best_solution, "Average:", average_fitness)
@@ -166,52 +174,77 @@ def evolutionary_algorithm():
     average_fitness = average(fitness_scores)
     return population[fitness_scores.index(best_solution)], best_solution, average_fitness
 
-def read_tsp_data(filename):
-    # Read data from a text file
-    file_path = 'data.txt'  # Replace with the actual file path
+def read_jssp_data(file_path):
+    # file_path = 'jssp_2.txt'  # Replace with the actual file path
     with open(file_path, 'r') as file:
-        data = file.read()
+        datafile = file.read()
 
-    # Split the data into lines
-    lines = data.split('\n')
-
-    # Get the number of jobs and machines
-    num_jobs, num_machines = map(int, lines[0].split())
-
-    # Extract job processing times
-    job_data = lines[1:]
-
-    # Initialize an empty list to store job schedules
-    job_schedules = []
-
-    # Parse each job data and create a dictionary for each job
-    for i in range(num_jobs):
-        job_schedule = {}
-        for j in range(num_machines):
-            machine, time = map(int, job_data[i].split()[2*j:2*j+2])
-            job_schedule[machine] = time
-        job_schedules.append(job_schedule)
+    # Parse input data
+    lines = datafile.strip().split('\n')
+    num_jobs, num_machines = map(int, lines[0].split())  # Line 0 contains the numbers of jobs and machines
+    jssp_data = []
+    for i in range(1,num_jobs+1):
+        line = lines[i].split()
+        x = []
+        for j in range(0, num_machines*2, 2):
+            tup = (int(line[j]), int(line[j+1]))
+            # print(tup)
+            x.append(tup)
+        jssp_data.append(x)
+    return num_jobs, num_machines, jssp_data
 
 def average(lst):
     if not lst:
         return 0  # Handle the case when the list is empty
     return sum(lst) / len(lst)
 
+def plot_chart(solution, jssp_data, num_machines, num_jobs):
+    sch = convert_solution_to_schedule(solution, copy.deepcopy(jssp_data), num_machines, num_jobs)
+    # Define a list of distinct colors for each job
+    colors = plt.cm.Set3.colors
+
+    # Your existing code to generate the data
+    machines = []
+    for i in range(num_machines-1, -1, -1):  # num_machines
+        for j in range(num_jobs):  # num_jobs
+            lst = []
+            lst.append(["M" + str(i)])
+            lst.append(sch[i][j][1])
+            lst.append(sch[i][j][2])
+            lst.append(sch[i][j][0])
+            machines.append(lst)
+
+    # Create figure and axes
+    fig, ax = plt.subplots()
+
+    # Plot bars for each task with a unique color for each job
+    for idx, (machine, start, duration, label) in enumerate(machines):
+        color = colors[label % len(colors)]  # Cycle through colors if there are more jobs than colors
+        ax.barh(machine, duration, left=start, color=color, edgecolor='blue')
+        ax.text(start + duration / 2, machine, label, ha='center', va='center')
+
+    # Add labels and formatting
+    ax.set_xlabel('Time (mins)')
+    ax.set_ylabel('Machine')
+    ax.set_yticks(np.unique([machine for machine, _, _, _ in machines]))  # Set y-ticks for machines
+    ax.invert_yaxis()  # Invert y-axis to match image orientation (optional)
+    plt.grid(True)
+
+    # Adjust layout for clarity
+    plt.tight_layout()
+
+    # Show the chart
+    plt.show()
+
+
 # Usage
-filename = "data.txt"
-tsp_data = read_tsp_data(filename)
-# print(tsp_data)
-# pop = initialize_population()
-# print(pop)
+filename = "jssp_1.txt"
+num_jobs, num_machines, jssp_data = read_jssp_data(filename)
+pop = initialize_population(num_machines, num_jobs)
 
-best_solution, best_fitness, avgFitness = evolutionary_algorithm()
-# print(best_solution)
+
+best_solution, best_fitness, avgFitness = evolutionary_algorithm(num_jobs, num_machines, jssp_data)
+plot_chart(best_solution, jssp_data, num_machines, num_jobs)
 print("Best fitness:", best_fitness, "Average fitness:", avgFitness)
-# print(fitness_function(pop[0]))
 
-
-# p1 = [1.4, 5.6, 2.3, 7.2, 9.3 ,3.5, 6.5, 4.6, 0.7, 1.9]
-# p2 = [9,3,7,8,2,6,5,1,4,0]
-# print(rank_based_selection(p2,p1))
-# crossover(p1,p2)
 
