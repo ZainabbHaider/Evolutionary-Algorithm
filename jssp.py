@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.colors as mcolors
 
 # Define parameters
-POPULATION_SIZE = 500
+POPULATION_SIZE = 50
 GENERATIONS = 50
 MUTATION_RATE = 0.25
-OFFSPRINGS = 600
+OFFSPRINGS = 60
 
 
 def convert_solution_to_schedule(sol, data, num_machines, num_jobs):
@@ -36,7 +36,7 @@ def fitness_function(solution, jssp_data, num_machines, num_jobs):
     sch = convert_solution_to_schedule(solution, copy.deepcopy(jssp_data), num_machines, num_jobs)
     cmax = []
     for i in sch:
-        cmax.append(i[num_jobs-1][1]+jssp_data[i[num_jobs-1][0]][num_machines-1][1])    
+        cmax.append(i[num_jobs-1][1]+i[num_jobs-1][2])  
     return max(cmax)
 
 # Initialize population
@@ -165,11 +165,11 @@ def evolutionary_algorithm(num_machines, num_jobs, jssp_data):
             fitness_scores.pop(x)
             temp_population.append(y)
         population = temp_population
-            
+        fitness_scores = [fitness_function(solution, jssp_data, num_machines, num_jobs) for solution in population]
         best_solution = min(fitness_scores)
         average_fitness = average(fitness_scores)
         print("Generation", generation, ": Best:",best_solution, "Average:", average_fitness)
-            
+        
     best_solution = min(fitness_scores)
     average_fitness = average(fitness_scores)
     return population[fitness_scores.index(best_solution)], best_solution, average_fitness
@@ -198,7 +198,7 @@ def average(lst):
         return 0  # Handle the case when the list is empty
     return sum(lst) / len(lst)
 
-def plot_chart(solution, jssp_data, num_machines, num_jobs):
+def plot_chart(solution, jssp_data, num_machines, num_jobs, cmax_time):
     sch = convert_solution_to_schedule(solution, copy.deepcopy(jssp_data), num_machines, num_jobs)
     # Define a list of distinct colors for each job
     colors = plt.cm.Set3.colors
@@ -224,6 +224,8 @@ def plot_chart(solution, jssp_data, num_machines, num_jobs):
         ax.text(start + duration / 2, machine, label, ha='center', va='center')
 
     # Add labels and formatting
+    ax.axvline(cmax_time, color='lightblue', linestyle='--', linewidth=2, label='Cmax', zorder=10)
+
     ax.set_xlabel('Time (mins)')
     ax.set_ylabel('Machine')
     ax.set_yticks(np.unique([machine for machine, _, _, _ in machines]))  # Set y-ticks for machines
@@ -243,7 +245,7 @@ num_jobs, num_machines, jssp_data = read_jssp_data(filename)
 # pop = initialize_population(num_machines, num_jobs)
 
 best_solution, best_fitness, avgFitness = evolutionary_algorithm(num_machines, num_jobs, jssp_data)
-plot_chart(best_solution, jssp_data, num_machines, num_jobs)
+plot_chart(best_solution, jssp_data, num_machines, num_jobs, best_fitness)
 print("Best fitness:", best_fitness, "Average fitness:", avgFitness)
 
 
