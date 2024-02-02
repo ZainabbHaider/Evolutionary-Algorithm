@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.colors as mcolors
 
 # Define parameters
-POPULATION_SIZE = 50
-GENERATIONS = 500
-MUTATION_RATE = 0.8
-OFFSPRINGS = 40
+POPULATION_SIZE = 500
+GENERATIONS = 50
+MUTATION_RATE = 0.25
+OFFSPRINGS = 600
 
 
 def convert_solution_to_schedule(sol, data, num_machines, num_jobs):
@@ -238,12 +238,11 @@ def plot_chart(solution, jssp_data, num_machines, num_jobs):
 
 
 # Usage
-filename = "jssp_1.txt"
+filename = "jssp_3.txt"
 num_jobs, num_machines, jssp_data = read_jssp_data(filename)
-pop = initialize_population(num_machines, num_jobs)
+# pop = initialize_population(num_machines, num_jobs)
 
-
-best_solution, best_fitness, avgFitness = evolutionary_algorithm(num_jobs, num_machines, jssp_data)
+best_solution, best_fitness, avgFitness = evolutionary_algorithm(num_machines, num_jobs, jssp_data)
 plot_chart(best_solution, jssp_data, num_machines, num_jobs)
 print("Best fitness:", best_fitness, "Average fitness:", avgFitness)
 
