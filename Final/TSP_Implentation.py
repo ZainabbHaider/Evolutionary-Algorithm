@@ -85,10 +85,7 @@ class TSP_Population(Population):
 
 class TSP_EA(EvolutionaryAlgorithm):
     def __init__(self, population_size, generations, mutation_rate, offsprings):
-        self.population_size = population_size
-        self.generations = generations
-        self.mutation_rate = mutation_rate
-        self.offsprings = offsprings
+        super().__init__(population_size, generations, mutation_rate, offsprings)
 
     def initialize_population(self, tsp_data):
         individuals = []

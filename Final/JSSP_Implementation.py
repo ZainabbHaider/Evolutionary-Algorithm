@@ -56,10 +56,10 @@ class JSSP_Population(Population):
         # Perform crossover for child 2 (offspring2)
         offspring2 = parent1.solution[:point1*num_jobs] + parent2.solution[point1*num_jobs:point2*num_jobs] + parent1.solution[point2*num_jobs:]
 
-        return offspring1, offspring2
+        return JSSP_Individual(offspring1), JSSP_Individual(offspring2)
 
     def mutate(self, solution, num_jobs, num_machines):
-        mutated_solution = solution[:]
+        mutated_solution = solution.solution[:]
         random_index_1 = random.randint(0, num_machines-1)
         random_index_2 = random.randint(0, num_machines-1)
         while random_index_1 == random_index_2:
@@ -75,7 +75,7 @@ class JSSP_Population(Population):
             del mutated_solution[random_index_2*num_jobs:random_index_2*num_jobs+num_jobs]
             for i in range((random_index_1)*num_jobs, (random_index_1)*num_jobs+num_jobs):
                 mutated_solution.insert(i, deleted_elements.pop(0))
-        return mutated_solution
+        return JSSP_Individual(mutated_solution)
 
 class JSSP_EA(EvolutionaryAlgorithm):
     def __init__(self, population_size, generations, mutation_rate, offsprings, num_jobs, num_machines):
@@ -132,7 +132,7 @@ class JSSP_EA(EvolutionaryAlgorithm):
                 fitness_scores.pop(x)
                 temp_population.append(y)
             pop.individuals = temp_population
-            fitness_scores = pop.fitness_scores(jssp_data)
+            fitness_scores = pop.fitness_scores(jssp_data, self.num_jobs, self.num_machines)
 
             best_solution = min(fitness_scores)
             average_fitness = sum(fitness_scores) / len(fitness_scores)

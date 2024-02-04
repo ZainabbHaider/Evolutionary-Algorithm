@@ -11,6 +11,8 @@ POPULATION_SIZE = 50
 GENERATIONS = 50
 MUTATION_RATE = 0.25
 OFFSPRINGS = 60
+ITERATIONS = 10
+
 
 def read_jssp_data(file_path):
     with open(file_path, 'r') as file:
@@ -71,7 +73,7 @@ avg_BSF = [0 for _ in range(GENERATIONS)]
 avg_ASF = [0 for _ in range(GENERATIONS)]
 best_solutions = []
 
-for iteration in range(1):
+for iteration in range(ITERATIONS):
     # Initialize a new random population for each iteration
     population = ea.initialize_population()
     best_fitness_values = []
@@ -87,8 +89,8 @@ for iteration in range(1):
     plot_chart(best_individual.solution, jssp_data, num_machines, num_jobs, best_fit)
 
 # Calculate average fitness over iterations
-avg_BSF = [x / 1 for x in avg_BSF]
-avg_ASF = [x / 1 for x in avg_ASF]
+avg_BSF = [x / ITERATIONS for x in avg_BSF]
+avg_ASF = [x / ITERATIONS for x in avg_ASF]
 
 # Plotting
 generations = range(1, len(best_fitness_values) + 1)
