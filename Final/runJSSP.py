@@ -8,9 +8,9 @@ from JSSP_Implementation import *
 
 # Define parameters
 POPULATION_SIZE = 50
-GENERATIONS = 50
-MUTATION_RATE = 0.25
-OFFSPRINGS = 60
+GENERATIONS = 150
+MUTATION_RATE = 0.2
+OFFSPRINGS = 40
 ITERATIONS = 10
 
 
@@ -83,10 +83,7 @@ for iteration in range(ITERATIONS):
     best_solutions.append(best_individual)
     avg_BSF = [x + y for x, y in zip(avg_BSF, best_fitness_values)]
     avg_ASF = [x + y for x, y in zip(avg_ASF, average_fitness_values)]
-    print(f"Iteration: {iteration + 1}, Best Fitness: {best_fit}")
-
-    # Plot the chart for the best solution
-    plot_chart(best_individual.solution, jssp_data, num_machines, num_jobs, best_fit)
+    print(f"Iteration: {iteration + 1}, Best Fitness: {best_fit}")    
 
 # Calculate average fitness over iterations
 avg_BSF = [x / ITERATIONS for x in avg_BSF]
@@ -102,3 +99,10 @@ plt.ylabel('Fitness')
 plt.title('Mean Best and Average Fitness over Iterations')
 plt.legend()
 plt.show()
+
+# print(best_solutions)
+fitness_scores = [individual.fitness(jssp_data, num_machines, num_jobs) for individual in best_solutions]
+# print(fitness_scores)
+max_fitness = min(fitness_scores)
+print(max_fitness)
+plot_chart(best_solutions[fitness_scores.index(max_fitness)].solution, jssp_data, num_machines, num_jobs, max_fitness)
