@@ -173,9 +173,13 @@ class TSP_EA(EvolutionaryAlgorithm):
                             elite_data.append(sol)  # Append the extracted information as a tuple
                 
                 # add elite individuals to population
-                for i in elite_data:
-                    if i not in pop.individuals:
-                        pop.individuals.append(i)
+                r = random.random()
+                if r < 0.7:
+                    for i in elite_data:
+                        if i not in pop.individuals:
+                            r2 = random.random()
+                            if r2 < 0.5:
+                                pop.individuals.append(i)
 
             fitness_scores = pop.fitness_scores(tsp_data)
             

@@ -6,8 +6,8 @@ from TSP_Implentation import *
  
 POPULATION_SIZE = 200
 GENERATIONS = 5000
-MUTATION_RATE = 0.7
-OFFSPRINGS = 200
+MUTATION_RATE = 0.75
+OFFSPRINGS = 250
 
 def read_tsp_data(filename):
     tsp_data = {}
