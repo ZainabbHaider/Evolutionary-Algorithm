@@ -12,7 +12,7 @@ POLY_MIN_POINTS = 3
 POLY_MAX_POINTS = 7
 POLYGONS = 50
 
-class Chromosome(object):
+class Individual(object):
     def __init__(self, imageSize, polygons=[]):
         self.imageSize = imageSize
         self.polygons = polygons
@@ -44,30 +44,26 @@ class Chromosome(object):
 
         return img
 
-    def crossOver(self):
+    def mutation(self):
         # Create a deep copy of the polygons list
         polygons = [copy.deepcopy(polygon) for polygon in self.polygons]
         # Randomly select a polygon from the copied list
         rand_index = random.randrange(len(polygons))
-        polygons[rand_index].mutate(self.imageSize)  # Mutate the selected polygon
-        # Return a new Chromosome object with the mutated polygon
-        return Chromosome(self.imageSize, polygons)
+        if random.random() <= 0.5:
+            # Mutate color of polygon
+            idx = random.randrange(4)
+            value = random.randrange(256)
+            polygons[rand_index].colour = tuple(value if i == idx else c for i, c in enumerate(polygons[rand_index].colour))
+        else:
+            # Mutate a random point of polygon
+            idx = random.randrange(len(polygons[rand_index].points))
+            polygons[rand_index].points[idx] = rand_point(self.imageSize[0], self.imageSize[1])
+        return Individual(self.imageSize, polygons)
     
 class Polygon(object):
     def __init__(self, colour=None, points=[]):
         self.colour = colour
         self.points = points
-
-    def mutate(self, size):
-        if random.random() <= 0.5:
-            # Mutate color
-            idx = random.randrange(4)
-            value = random.randrange(256)
-            self.colour = tuple(value if i == idx else c for i, c in enumerate(self.colour))
-        else:
-            # Mutate a random point
-            idx = random.randrange(len(self.points))
-            self.points[idx] = rand_point(size[0], size[1])
 
 class Population(object):
     def __init__(self, populationSize, image) -> None:
@@ -78,7 +74,7 @@ class Population(object):
         population = []
         pFit = []
         for i in range(self.popSize):
-            chromosome = None
+            offspring = None
             polygons = []
             (width, height) = self.img.size
 
@@ -92,27 +88,26 @@ class Population(object):
                 colour = (255, 255, 255, 128) # white colour
                 polygon = Polygon(colour, points)
                 polygons.append(polygon)
-            chromosome = Chromosome(self.img.size, polygons)
-            population.append(chromosome)
+            offspring = Individual(self.img.size, polygons)
+            population.append(offspring)
         pFit = parallel_fitness(population, np.array(self.img))
         return population, pFit
      
-    def populationCrossOver(self, parentChr, img):
+    def populationMutation(self, parentChr, img):
         childChr = []
-        cFit = []
+        childFitness = []
         for i in range(self.popSize):
-            childChromosome = parentChr[i].crossOver()
-            childChr.append(childChromosome)
-            # child = childChromosome.draw()
-        cFit = parallel_fitness(childChr, np.array(img))
-        return childChr, cFit
+            child = parentChr[i].mutation()
+            childChr.append(child)
+        childFitness = parallel_fitness(childChr, np.array(img))
+        return childChr, childFitness
 
     def survivorSelection(self, parentChr, childChr, pFit, cFit):
-        for i in range(self.popSize):    
-            if cFit[i] < pFit[i]:
-                parentChr[i] = childChr[i]
-                pFit[i] = cFit[i]
-        return parentChr, pFit, childChr, cFit
+        for i in range(self.popSize):    # Iterating through the population
+            if cFit[i] < pFit[i]:        # If the child is better than the parent, Replace the parent with the child in the population
+                parentChr[i] = childChr[i]  
+                pFit[i] = cFit[i]         
+        return parentChr, pFit, childChr, cFit 
             
 # Fitness function to calculate the difference between two images, using jax to speed up the process
 @jit
@@ -127,8 +122,8 @@ def fitness(img1, img2):
 
 # computing fitness using parralel computing in order to speed up the process
 def parallel_fitness(population, img_array):
-    def evaluate_fitness(chromosome):
-        image_array = np.array(chromosome.draw())
+    def evaluate_fitness(individual):
+        image_array = np.array(individual.draw())
         return fitness(img_array, image_array)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -152,7 +147,7 @@ parentChr, pFit= population.initialisePopulation() # randomly initialise populat
     
 
 for generations in range(GENERATIONS+1):
-    childChr, cFit = population.populationCrossOver(parentChr, img) # crossover
+    childChr, cFit = population.populationMutation(parentChr, img) # mutation
     parentChr, pFit, childChr, cFit = population.survivorSelection(parentChr, childChr, pFit, cFit) # survvior selection
     
     minFitness = pFit.index(min(pFit))
