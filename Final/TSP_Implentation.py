@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from classIndividual import *
 from classPopulation import *
 from classEvolutionaryAlgorithm import *
+import ast
 
 class TSP_Individual(Individual):
     def __init__(self, solution):
@@ -82,10 +83,39 @@ class TSP_Population(Population):
 
         m = TSP_Individual(mutated_solution)
         return m
+    
+    def mutate1(self, solution):
+        mutated_solution = solution.solution[:]
+        random_index_1 = random.randint(0, len(mutated_solution)-1)
+        random_index_2 = random.randint(0, len(mutated_solution)-1)
+        while random_index_1 == random_index_2:
+            random_index_2 = random.randint(0, len(mutated_solution)-1)
+
+        mutated_solution[random_index_1], mutated_solution[random_index_2] = mutated_solution[random_index_2], mutated_solution[random_index_1]
+
+        m = TSP_Individual(mutated_solution)
+        return m
+    
+    def mutate2(self, solution):
+        mutated_solution = solution.solution[:]
+        
+        start, end = sorted(random.sample(range(len(mutated_solution)), 2))
+        segment = mutated_solution[start:end]
+        del mutated_solution[start:end]
+        insertion_point = random.randint(0, len(mutated_solution))
+        mutated_solution[insertion_point:insertion_point] = segment
+        
+        m = TSP_Individual(mutated_solution)
+        return m
 
 class TSP_EA(EvolutionaryAlgorithm):
-    def __init__(self, population_size, generations, mutation_rate, offsprings):
-        super().__init__(population_size, generations, mutation_rate, offsprings)
+    def __init__(self, population_size, generations, mutation_rate, offsprings, replacement, elite):
+        self.population_size = population_size
+        self.generations = generations
+        self.mutation_rate = mutation_rate
+        self.offsprings = offsprings
+        self.replacement = replacement
+        self.elite = elite
 
     def initialize_population(self, tsp_data):
         individuals = []
@@ -106,24 +136,46 @@ class TSP_EA(EvolutionaryAlgorithm):
             # Create offspring through crossover and mutation
             offspring = []
             for i in range(self.offsprings // 2):
-                parent1 = pop.individuals[self.rank_based_selection_min(fitness_scores)]
-                parent2 = pop.individuals[self.rank_based_selection_min(fitness_scores)]
+                parent1 = pop.individuals[self.binary_tournament_selection_min(fitness_scores)]
+                parent2 = pop.individuals[self.binary_tournament_selection_min(fitness_scores)]
                 child1, child2 = pop.crossover(parent1, parent2)
                 random_number_1 = random.random()
                 random_number_2 = random.random()
                 if random_number_1 > self.mutation_rate:
                     offspring.append(child1)
                 else:
-                    child1 = pop.mutate(child1)
+                    child1 = pop.mutate2(child1)
                     offspring.append(child1)
                 if random_number_2 > self.mutation_rate:
                     offspring.append(child2)
                 else:
-                    child2 = pop.mutate(child2)
+                    child2 = pop.mutate2(child2)
                     offspring.append(child2)
-                    
-            for i in offspring:
-                pop.individuals.append(i)
+            
+            if self.replacement:
+                # replacement implementation
+                pop.individuals = offspring
+            else:
+                # regular implementation
+                for i in offspring:
+                    pop.individuals.append(i)
+            
+            if self.elite:
+                file_path = "HallofFame.txt"
+                elite_data = []
+                with open(file_path, 'r') as file:
+                    for line in file:
+                        line = line.strip()  # Remove leading/trailing whitespaces and newline characters
+                        if line:  # Ensure the line is not empty
+                            items = line.split(';')  # Split the line by ';'
+                            sol = ast.literal_eval(items[0])
+                            sol = TSP_Individual(sol)
+                            elite_data.append(sol)  # Append the extracted information as a tuple
+                
+                # add elite individuals to population
+                for i in elite_data:
+                    if i not in pop.individuals:
+                        pop.individuals.append(i)
 
             fitness_scores = pop.fitness_scores(tsp_data)
             
@@ -144,6 +196,6 @@ class TSP_EA(EvolutionaryAlgorithm):
             avg_fitness_values.append(average_fitness)
             
             print("Generation", generation+1, ": Best:",best_solution, "Average:", average_fitness)
-                
+
         best_solution = min(fitness_scores)
         return pop, pop.individuals[fitness_scores.index(best_solution)], best_solution, best_fitness_values, avg_fitness_values
