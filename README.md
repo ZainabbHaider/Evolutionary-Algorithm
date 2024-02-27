@@ -15,7 +15,3 @@ This repository provides implementations of evolutionary algorithms for solving:
 - **Evolutionary Art**: This involves creating art through the evolutionary process. In this repository, we focus on recreating face images, such as the Mona Lisa, using polygons. The goal is to evolve a population of polygons to resemble a target image.
 
 
-## License
-
-This repository is licensed under the MIT License. See the LICENSE file for details.
-
